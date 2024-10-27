@@ -16,7 +16,7 @@ public class Node
 
     public string Name = "";  // es string por pura claridad, idealmente se usan ints para diferenciar objetos.
 
-    public Node Parent;  // referencia al nodo padre de este nodo en el árbol que se genera durante un Pathfinding.
+    public Node Parent;  // referencia al nodo padre de este nodo en el Ã¡rbol que se genera durante un Pathfinding.
 
     public float Priority = Single.PositiveInfinity;
 }
@@ -37,11 +37,11 @@ public class Edge
     public float Weight = 1.0f;
 
     // EdgeA == EdgeB
-    // Si son punteros/referencias pues nomás comparan la dirección de memoria y ya.
-    // PERO SI NO, ustedes tendrían que comparar una o más cosas.
-    // Por ejemplo podríamos checar EdgeA.A == EdgeB.A && EdgeA.B == EdgeB.B && EdgeA.Weight == EdgeB.Weight
+    // Si son punteros/referencias pues nomÃ¡s comparan la direcciÃ³n de memoria y ya.
+    // PERO SI NO, ustedes tendrÃ­an que comparar una o mÃ¡s cosas.
+    // Por ejemplo podrÃ­amos checar EdgeA.A == EdgeB.A && EdgeA.B == EdgeB.B && EdgeA.Weight == EdgeB.Weight
 
-    // Un hash te da un solo número que representa a ese objeto.
+    // Un hash te da un solo nÃºmero que representa a ese objeto.
 
     // Vector3 A == Vector3 B?
     // A.x == B.x && A.y == B.y && A.z == B.z
@@ -49,22 +49,22 @@ public class Edge
 
 public class Graph : MonoBehaviour
 {
+    private List<Node> PathToGoalBFS = new List<Node>(); // Declarada a nivel de clase
 
-    // Podríamos guardarlos en un array.
-    // Podríamos guardarlos en un List, Set
+    // PodrÃ­amos guardarlos en un array.
+    // PodrÃ­amos guardarlos en un List, Set
     // Dictionary, Queue, Stack, DynamicArray, Heap
 
     // Array:
-    // Ventajas: super rápido de acceder de manera secuencial. Te da el espacio de memoria completo.
+    // Ventajas: super rÃ¡pido de acceder de manera secuencial. Te da el espacio de memoria completo.
     // int [10]Array
     // Desventajas: Te da el espacio de memoria completo (lo vayas a usar o no, lo que puede llevar a desperdicios).
-    // desventajas: su tamaño (capacidad de almacenamiento) es totalmente estático.
-    // desventajas: poner y quitar elementos que hagan que cambie el tamaño del array es MUY lento.
+    // desventajas: su tamaÃ±o (capacidad de almacenamiento) es totalmente estÃ¡tico.
+    // desventajas: poner y quitar elementos que hagan que cambie el tamaÃ±o del array es MUY lento.
 
-
-    // ¿Qué es un "Set" en estructuras de datos / programación?
+    // Â¿QuÃ© es un "Set" en estructuras de datos / programaciÃ³n?
     // Un set es una estructura de datos que no permite repetidos
-    // específicamente en nuestros grafos, no vamos a querer ni nodos ni aristas repetidas.
+    // especÃ­ficamente en nuestros grafos, no vamos a querer ni nodos ni aristas repetidas.
 
     protected HashSet<Node> NodeSet = new HashSet<Node>();
     protected HashSet<Edge> EdgeSet = new HashSet<Edge>();
@@ -72,7 +72,6 @@ public class Graph : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
         // Vamos a llenar nuestros sets de nodos y aristas.
         // Comenzamos creando todos los nodos, porque las aristas necesitan que ya existan los nodos.
         Node NodeA = new Node("A");
@@ -111,12 +110,9 @@ public class Graph : MonoBehaviour
         EdgeSet.Add(EdgeEH);
 
         // Prueba BFS desde H hacia D
-        List<Node> PathToGoalBFS = new List<Node>();
-
-        // OJO: no olviden poner el out antes de los parámetros que son de salida.
-        if (BFS(NodeH, NodeD, out PathToGoalBFS))
+        if (BFS(NodeH, NodeD, out PathToGoalBFS)) // Uso la variable a nivel de clase
         {
-            Debug.Log("BFS: Sí hay camino del nodo: " + NodeH.Name + " hacia el nodo: " + NodeD.Name);
+            Debug.Log("BFS: SÃ­ hay camino del nodo: " + NodeH.Name + " hacia el nodo: " + NodeD.Name);
             PrintPath(PathToGoalBFS);
         }
         else
@@ -124,7 +120,21 @@ public class Graph : MonoBehaviour
             Debug.Log("BFS: No hay camino del nodo: " + NodeH.Name + " hacia el nodo: " + NodeD.Name);
         }
 
+        // Reiniciar los nodos antes de hacer una nueva bÃºsqueda
         ResetNodes(NodeSet);
+
+        // Escenario sin camino (remover aristas para que no haya conexiÃ³n entre H y D)
+        EdgeSet.RemoveWhere(edge => edge.Name == "EH" || edge.Name == "EG");
+
+        if (BFS(NodeH, NodeD, out PathToGoalBFS))
+        {
+            Debug.Log("BFS (sin camino): SÃ­ hay camino del nodo: " + NodeH.Name + " hacia el nodo: " + NodeD.Name);
+            PrintPath(PathToGoalBFS);
+        }
+        else
+        {
+            Debug.Log("BFS (sin camino): No hay camino del nodo: " + NodeH.Name + " hacia el nodo: " + NodeD.Name);
+        }
     }
 
     // Reset para los nodos
@@ -136,14 +146,13 @@ public class Graph : MonoBehaviour
         }
     }
 
-    
     bool BFS(Node Origin, Node Goal, out List<Node> PathToGoal)
     {
-        PathToGoal = new List<Node>();// Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
+        PathToGoal = new List<Node>();// Lo inicializamos en 0 por defecto por si no encontramos ningÃºn camino.
         Queue<Node> queue = new Queue<Node>();
         HashSet<Node> visited = new HashSet<Node>();
 
-        // Con esto evitamos que algún otro nodo trate de meter al origin en los nodos por visitar.
+        // Con esto evitamos que algÃºn otro nodo trate de meter al origin en los nodos por visitar.
 
         Origin.Parent = null;
         queue.Enqueue(Origin);
@@ -191,7 +200,7 @@ public class Graph : MonoBehaviour
         return path;
     }
 
-    // Método para imprimir el camino
+    // MÃ©todo para imprimir el camino
     void PrintPath(List<Node> PathToGoal)
     {
         foreach (Node node in PathToGoal)
@@ -220,86 +229,83 @@ public class Graph : MonoBehaviour
         return Neighbors;
     }
 
-
-
     // Nuestro DFS iterativo debe dar exactamente los mismos resultados que el recursivo.
     // Nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)
-    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante: El Backtracking.
-    // El camino nos lo pasará a través del parámetro de salida: PathToGoal (nótese el término "out" que lo marca como de salida).
+    // y si sÃ­ hay un camino, nos dice cuÃ¡l fue. Esto del camino tiene un truco interesante: El Backtracking.
+    // El camino nos lo pasarÃ¡ a travÃ©s del parÃ¡metro de salida: PathToGoal (nÃ³tese el tÃ©rmino "out" que lo marca como de salida).
     bool DFS(Node Origin, Node Goal, out List<Node> PathToGoal)
     {
-        PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
+        PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningÃºn camino.
 
-        // Para saber cuántos nodos hay todavía por visitar,
-        // necesitamos llevar registro de cuáles nodos ya hemos visitado.
+        // Para saber cuÃ¡ntos nodos hay todavÃ­a por visitar,
+        // necesitamos llevar registro de cuÃ¡les nodos ya hemos visitado.
         // Necesitamos dos contenedores de nodos, uno para los ya visitados y otro para los conocidos.
 
         // Un Set es un contenedor perfecto para los visitados, 
-        // ya que solo necesitamos saber si ya está dentro de visitados o no.
+        // ya que solo necesitamos saber si ya estÃ¡ dentro de visitados o no.
 
         HashSet<Node> VisitedNodes = new HashSet<Node>();
 
-        // Podemos usar la estructura de datos Pila (stack) para reemplazar la Pila de llamadas que usaba la versión recursiva
+        // Podemos usar la estructura de datos Pila (stack) para reemplazar la Pila de llamadas que usaba la versiÃ³n recursiva
         // del algoritmo para mantener su orden.
-        // ¿Cuándo se meten nodos en la pila? En cuanto tu nodo actual lo puede alcanzar (tiene una arista con él), Y no 
-        // tiene ya un padre asignado (el que no tenga parent quiere decir que ningún otro nodo ha llegado ya a este nuevo nodo).
-        // Los nodos que todavía estén en esta pila son los nodos que todavía hay por visitar.
+        // Â¿CuÃ¡ndo se meten nodos en la pila? En cuanto tu nodo actual lo puede alcanzar (tiene una arista con Ã©l), Y no 
+        // tiene ya un padre asignado (el que no tenga parent quiere decir que ningÃºn otro nodo ha llegado ya a este nuevo nodo).
+        // Los nodos que todavÃ­a estÃ¡n en esta pila son los nodos que todavÃ­a hay por visitar.
         Stack<Node> KnownStack = new Stack<Node>();
 
-        // Con esto evitamos que algún otro nodo trate de meter al origin en los nodos por visitar.
+        // Con esto evitamos que algÃºn otro nodo trate de meter al origin en los nodos por visitar.
         Origin.Parent = Origin;
-        // Para que no se termine el While inmediatamente (porque la KnownStack está vacía)
-        // nosotros tenemos que meter al menos un nodo a dicha Stack. Metemos el único no que tenemos certeza de que podemos alcanzar ahorita.
+        // Para que no se termine el While inmediatamente (porque la KnownStack estÃ¡ vacÃ­a)
+        // nosotros tenemos que meter al menos un nodo a dicha Stack. Metemos el Ãºnico no que tenemos certeza de que podemos alcanzar ahorita.
         KnownStack.Push(Origin);
 
         Node CurrentNode = null;
 
-
         // Para "simular" la recursividad, necesitamos hacer un ciclo, ya sea un for o un while, etc.
-        // Nuestro ciclo va a tener como condición de finalización las mismas condiciones que la versión recursiva:
-        // es decir: 1) Ya llegué a la meta (goal); 2) No hay camino en absoluto,
-        // esta condición 2, se cumple cuando ya visitaste TODOS los nodos que pudiste alcanzar y ninguno de ellos fue la meta (goal).
-        while (CurrentNode != Goal && KnownStack.Count != 0)  /* todavía haya nodos por visitar */
+        // Nuestro ciclo va a tener como condiciÃ³n de finalizaciÃ³n las mismas condiciones que la versiÃ³n recursiva:
+        // es decir: 1) Ya lleguÃ© a la meta (goal); 2) No hay camino en absoluto,
+        // esta condiciÃ³n 2, se cumple cuando ya visitaste TODOS los nodos que pudiste alcanzar y ninguno de ellos fue la meta (goal).
+        while (CurrentNode != Goal && KnownStack.Count != 0)  /* todavÃ­a haya nodos por visitar */
         {
-            // Las pilas (Stack) se trabajan sobre el elemento que está en el tope de la pila.
+            // Las pilas (Stack) se trabajan sobre el elemento que estÃ¡ en el tope de la pila.
             CurrentNode = KnownStack.Peek(); // lee el elemento del tope de la pila PERO no lo saques.
             Debug.Log("Nodo: " + CurrentNode.Name);
 
-            // Ahora queremos meter a la Pila a los vecinos de current que no tengan parent y que no estén en los visitados.
+            // Ahora queremos meter a la Pila a los vecinos de current que no tengan parent y que no estÃ©n en los visitados.
             // paso 1) Obtener sus vecinos
             List<Node> currentNeighbors = GetNeighbors(CurrentNode);
 
-            // paso 2) filtrar a los que ya estén en visitados.
+            // paso 2) filtrar a los que ya estÃ¡n en visitados.
             List<Node> nonVisitedNodes = RemoveVisitedNodes(currentNeighbors, VisitedNodes);
 
             // paso 3) filtrar a los que tengan parent.
             List<Node> nonParentNeighbors = RemoveNodesWithParent(nonVisitedNodes);
 
-            // Ahora sí, ya podemos meter a la pila al primero de esa lista de los que quedaron después de filtrar (nonParentNeighbors)
+            // Ahora sÃ­, ya podemos meter a la pila al primero de esa lista de los que quedaron despuÃ©s de filtrar (nonParentNeighbors)
             if (nonParentNeighbors.Count > 0)
             {
-                // Como este nodo currentNode está metiendo a la stack al nodo "nonParentNeighbors[0]", entonces currentNode se vuelve su padre.
+                // Como este nodo currentNode estÃ¡ metiendo a la stack al nodo "nonParentNeighbors[0]", entonces currentNode se vuelve su padre.
                 nonParentNeighbors[0].Parent = CurrentNode;
-                // entonces sí hay alguien a quien meter en la pila, y metemos al primer elemento de dicha lista.
+                // entonces sÃ­ hay alguien a quien meter en la pila, y metemos al primer elemento de dicha lista.
                 KnownStack.Push(nonParentNeighbors[0]);
                 continue;
             }
             // Un nodo no se saca de la pila hasta que ya no tiene otro nodo a quien meter a la pila.
             Node PoppedNode = KnownStack.Pop();
 
-            // Después de hacerle Pop, lo tenemos que meter a los visitados.
+            // DespuÃ©s de hacerle Pop, lo tenemos que meter a los visitados.
             VisitedNodes.Add(PoppedNode);
         }
 
-        // Nos falta comprobar por qué se rompió el ciclo while de arriba.
-        // Si esto se cumple, es porque sí llegamos a la meta.
+        // Nos falta comprobar por quÃ© se rompiÃ³ el ciclo while de arriba.
+        // Si esto se cumple, es porque sÃ­ llegamos a la meta.
         if (Goal == CurrentNode)
         {
-            // Ahorita no hacemos nada más con ella, pero si lo quisiéramos hacer, pues de aquí la tomaríamos.
+            // Ahorita no hacemos nada mÃ¡s con ella, pero si lo quisiÃ©ramos hacer, pues de aquÃ­ la tomarÃ­amos.
             PathToGoal = Backtrack(CurrentNode);
             return true;
         }
-        // Si no, ¡pues no!
+        // Si no, Â¡pues no!
         return false;
     }
 
@@ -308,7 +314,7 @@ public class Graph : MonoBehaviour
         List<Node> FilteredNeighbors = new List<Node>();
         foreach (Node neighbor in NodesToBeFiltered)
         {
-            // ¿Este nodo tiene Parent? Si no, lo añadimos a los que vamos a regresar.
+            // Â¿Este nodo tiene Parent? Si no, lo aÃ±adimos a los que vamos a regresar.
             if (neighbor.Parent == null)
             {
                 FilteredNeighbors.Add(neighbor);
@@ -329,82 +335,12 @@ public class Graph : MonoBehaviour
         return nonVisitedNodes;
     }
 
-
-    // Vamos a implementar el algoritmo de depth-first search (DFS) usando la pila de llamadas,
-    // de manera recursiva.
-    // ¿Qué pregunta nos va a responder o qué resultado nos va a dar?
-    // Pues nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)
-    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante.
-    bool RecursiveDFS(Node Origin, Node Goal)
-    {
-        // Para evitar que alguien se vuelva padre del nodo raíz de todo el árbol
-        // hacemos que el nodo raíz del árbol sea su propio padre.
-        if (Origin.Parent == null)
-        {
-            // si esto se cumple, entonces este nodo es la raíz del árbol.
-            Origin.Parent = Origin;
-        }
-        // La condición de terminación de esta función recursiva es 
-        // "el nodo en el que estoy actualmente (Origin) es la meta (Goal)"
-        if (Origin == Goal)
-            return true;
-
-        // Desde el nodo donde estamos ahorita, checamos cuáles son nuestros vecinos.
-        // Los vecinos de este nodo son los que comparten una arista con él.
-        // lo que podemos hacer es revisar todas las aristas y obtener las que hagan referencia a este nodo.
-        // 1) Checar todas las aristas.
-        foreach (Edge currentEdge in EdgeSet)
-        {
-            bool Result = false;
-            Node Neighbor = null;
-
-            // Vamos a checar si la arista en cuestión hace referencia a este nodo "Origin"
-            // Checamos su A y su B. Y tenemos que checar que el vecino NO tenga padre, para que Origin 
-            // se convierta en su padre.
-
-            if (currentEdge.A == Origin && currentEdge.B.Parent == null)
-            {
-                // entonces sí hace referencia a este nodo. Lo que hacemos es meter al Nodo vecino.
-                // Si encontramos un vecino, primero le decimos que el nodo Origin actual es
-                // su nodo padre, y después mandamos a llamar la función de nuevo, pero 
-                // usando a este vecino como el nuevo origen.
-                currentEdge.B.Parent = Origin;
-                Neighbor = currentEdge.B;
-            }
-            else if (currentEdge.B == Origin && currentEdge.A.Parent == null)
-            {
-                // entonces sí hace referencia a este nodo. Lo que hacemos es meter al Nodo vecino.
-                // Si encontramos un vecino, primero le decimos que el nodo Origin actual es
-                // su nodo padre, y después mandamos a llamar la función de nuevo, pero 
-                // usando a este vecino como el nuevo origen.
-                currentEdge.A.Parent = Origin;
-                Neighbor = currentEdge.A;
-            }
-
-            // Necesitamos esta comprobación por si no entra ni al if ni al if else de arriba.
-            if (Neighbor != null)
-                Result = RecursiveDFS(Neighbor, Goal);
-
-            if (Result == true)
-            {
-                // Si este nodo fue parte del camino al Goal, le decimos que imprima su nombre.
-                Debug.Log("El nodo: " + Origin.Name + " fue parte del camino a la meta.");
-                // entonces el hijo de este nodo ya encontró el camino
-                // y eso hace una reacción en cadena de "Papá, sí encontré el camino".
-                return true;
-            }
-        }
-        // si ya acabó el ciclo de intentar visitar a sus vecinos, se regresa a la función del nodo
-        // que es su padre.
-        return false;
-    }
-
     // Funciones recursivas VS funciones iterativas.
 
-    // las funciones recursivas son funciones que se mandan a llamar a sí mismas.
+    // las funciones recursivas son funciones que se mandan a llamar a sÃ­ mismas.
     void FuncionRecursiva(int Counter)
     {
-        Debug.Log("Hola número: " + Counter);
+        Debug.Log("Hola nÃºmero: " + Counter);
         if (Counter == 10)
             return;
         FuncionRecursiva(Counter + 1);
@@ -417,15 +353,55 @@ public class Graph : MonoBehaviour
     // 2, 1, 0
     // 3, 2, 1, 0
     // Ahora vamoas a sacar elementos
-    // sacas el 3, que es el último que metiste, y te quedaría:
+    // sacas el 3, que es el Ãºltimo que metiste, y te quedarÃ­a:
     // 2, 1, 0
     // 1, 0, 
     // 0
     // Last in, First out
-    // solo puedes sacar el último elemento que metiste.
+    // solo puedes sacar el Ãºltimo elemento que metiste.
 
     // Update is called once per frame
     void Update()
     {
     }
+
+    void OnDrawGizmos()
+    {
+        if (PathToGoalBFS != null && PathToGoalBFS.Count > 1)
+        {
+            for (int i = 0; i < PathToGoalBFS.Count - 1; i++)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(GetNodePosition(PathToGoalBFS[i]), GetNodePosition(PathToGoalBFS[i + 1]));
+            }
+        }
+    }
+
+    Vector3 GetNodePosition(Node node)
+{
+    // Forzar las posiciones manualmente para depuraciÃ³n
+    switch (node.Name)
+    {
+        case "A":
+            return new Vector3(0, 1, 0);
+        case "B":
+            return new Vector3(2, 1, 0);
+        case "C":
+            return new Vector3(4, 1, 0);
+        case "D":
+            return new Vector3(6, 1, 0);
+        case "E":
+            return new Vector3(0, 3, 0);
+        case "F":
+            return new Vector3(2, 3, 0);
+        case "G":
+            return new Vector3(4, 3, 0);
+        case "H":
+            return new Vector3(6, 3, 0);
+        default:
+            Debug.LogWarning("Nodo no encontrado: " + node.Name);
+            return Vector3.zero; // Devolver una posiciÃ³n por defecto si no se encuentra el nodo
+    }
+}
+
 }
