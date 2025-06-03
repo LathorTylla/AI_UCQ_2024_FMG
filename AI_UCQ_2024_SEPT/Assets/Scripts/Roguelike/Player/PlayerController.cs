@@ -79,13 +79,10 @@ public class PlayerController : MonoBehaviour
 
         player.Move(moveDirection * speed * Time.deltaTime);
 
-        if (moveDirection != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
-        }
+        // Rotación con mouse (apuntar hacia el cursor)
+        RotateTowardsMouse();
 
-        // Disparar al presionar la tecla (por ejemplo, tecla "Space")
+        // Disparar al presionar la tecla "Space"
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Shoot();
@@ -100,6 +97,30 @@ public class PlayerController : MonoBehaviour
                 isInvincible = false;
                 // Asegurarse de que el jugador esté visible al terminar la invulnerabilidad
                 SetPlayerVisibility(true);
+            }
+        }
+    }
+
+    void RotateTowardsMouse()
+    {
+        // Obtener posición del mouse en pantalla
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        // Plano horizontal a la altura del jugador para el rayo
+        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+
+        float rayDistance;
+
+        if (groundPlane.Raycast(ray, out rayDistance))
+        {
+            Vector3 pointToLook = ray.GetPoint(rayDistance);
+            Vector3 direction = pointToLook - transform.position;
+            direction.y = 0; // Mantener rotación solo en Y
+
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
             }
         }
     }
