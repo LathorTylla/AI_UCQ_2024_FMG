@@ -11,21 +11,24 @@ public class NavMeshEscapistEnemy : EnemyBase
     public Transform bulletSpawnPoint;
     public float detectionRadius = 10.0f;
     public float fleeDistance = 5.0f;
-    public float rotationSpeed = 5.0f;
-
-    private GameObject player;
+    public float lineOfSightCheckInterval = 0.5f;
+    public LayerMask playerLayer;
+    public LayerMask obstacleLayer;
+    public float visionDuration = 5.0f; // Tiempo para perder visión del jugador
     private NavMeshAgent agent;
+    private GameObject player;
     private bool isTired = false;
     private bool canShoot = true;
     private Renderer enemyRenderer;
     private Color originalColor;
+    private float timeWithoutVision;
+    private bool hasLineOfSight;
 
     protected override void Start()
     {
         base.Start();
         player = GameObject.FindGameObjectWithTag("Player");
         agent = GetComponent<NavMeshAgent>();
-
         agent.acceleration = 20.0f;
         agent.speed = 3.0f;
 
@@ -34,6 +37,7 @@ public class NavMeshEscapistEnemy : EnemyBase
 
         StartCoroutine(FleeRoutine());
         StartCoroutine(ShootAtPlayer());
+        StartCoroutine(CheckLineOfSight());
     }
 
     IEnumerator FleeRoutine()
@@ -74,6 +78,8 @@ public class NavMeshEscapistEnemy : EnemyBase
                     agent.SetDestination(hit.position);
                 }
             }
+
+            Debug.DrawLine(transform.position, agent.destination, Color.magenta, 2.0f);
         }
     }
 
@@ -81,15 +87,15 @@ public class NavMeshEscapistEnemy : EnemyBase
     {
         isTired = true;
         agent.ResetPath();
-        enemyRenderer.material.color = Color.blue; // Cambia color para indicar cansancio
+        enemyRenderer.material.color = Color.blue;
         canShoot = false;
-        Invoke(nameof(EnableShootingWhileTired), shootingInterval * 2); // Hace que el disparo sea más lento
+        Invoke(nameof(EnableShootingWhileTired), shootingInterval * 2);
     }
 
     private void ExitTiredState()
     {
         isTired = false;
-        enemyRenderer.material.color = originalColor; // Regresa al color original
+        enemyRenderer.material.color = originalColor;
     }
 
     IEnumerator ShootAtPlayer()
@@ -119,6 +125,43 @@ public class NavMeshEscapistEnemy : EnemyBase
     bool IsPlayerInRange()
     {
         return Vector3.Distance(transform.position, player.transform.position) <= detectionRadius;
+    }
+
+    IEnumerator CheckLineOfSight()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(lineOfSightCheckInterval);
+
+            if (player == null)
+                yield break;
+
+            Vector3 directionToPlayer = (player.transform.position - transform.position).normalized;
+            RaycastHit hit;
+
+            if (Physics.Raycast(transform.position, directionToPlayer, out hit, detectionRadius, obstacleLayer))
+            {
+                if (hit.collider.CompareTag("Player"))
+                {
+                    hasLineOfSight = true;
+                    timeWithoutVision = 0.0f;
+                    if (!isTired)
+                    {
+                        agent.ResetPath();
+                    }
+                }
+                else
+                {
+                    hasLineOfSight = false;
+                    timeWithoutVision += lineOfSightCheckInterval;
+                    if (timeWithoutVision >= visionDuration && !isTired)
+                    {
+                        StartFleeing();
+                    }
+                }
+            }
+            Debug.DrawRay(transform.position, directionToPlayer * detectionRadius, hasLineOfSight ? Color.green : Color.red);
+        }
     }
 
     void OnDrawGizmos()
