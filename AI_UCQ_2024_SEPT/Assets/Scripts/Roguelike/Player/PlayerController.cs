@@ -17,6 +17,10 @@ public class PlayerController : MonoBehaviour
     public int poolBulletSize = 1; // Tamaño del pool de balas
     private List<GameObject> bulletPool; // Pool de balas
 
+    // Variables para la línea de puntería
+    public LineRenderer aimLine;  // Asignar en inspector el LineRenderer
+    public float aimLineLength = 10f; // Longitud de la línea guía
+
     // Variables de vida
     public int maxHP = 100; // Vida máxima del jugador
     private int currentHP; // Vida actual del jugador
@@ -56,6 +60,12 @@ public class PlayerController : MonoBehaviour
         {
             originalColor = playerRenderer.material.color;
         }
+
+        // Opcional: desactivar la línea al inicio (si quieres)
+        if (aimLine != null)
+        {
+            aimLine.positionCount = 0;
+        }
     }
 
     void Update()
@@ -82,7 +92,10 @@ public class PlayerController : MonoBehaviour
         // Rotación con mouse (apuntar hacia el cursor)
         RotateTowardsMouse();
 
-        // Disparar al presionar la tecla "Space"
+        // Actualizar línea de puntería con colisiones
+        UpdateAimLine();
+
+        // Disparar con "space"
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Shoot();
@@ -103,31 +116,58 @@ public class PlayerController : MonoBehaviour
 
     void RotateTowardsMouse()
     {
-        // Obtener posición del mouse en pantalla
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        // Plano horizontal a la altura del jugador para el rayo
-        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
-
-        float rayDistance;
-
-        if (groundPlane.Raycast(ray, out rayDistance))
+        // Comprobar si el cursor está dentro de la pantalla antes de usar ScreenPointToRay
+        if (Input.mousePosition.x >= 0 && Input.mousePosition.x <= Screen.width &&
+            Input.mousePosition.y >= 0 && Input.mousePosition.y <= Screen.height)
         {
-            Vector3 pointToLook = ray.GetPoint(rayDistance);
-            Vector3 direction = pointToLook - transform.position;
-            direction.y = 0; // Mantener rotación solo en Y
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
 
-            if (direction.sqrMagnitude > 0.001f)
+            float rayDistance;
+
+            if (groundPlane.Raycast(ray, out rayDistance))
             {
-                Quaternion targetRotation = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                Vector3 pointToLook = ray.GetPoint(rayDistance);
+                Vector3 direction = pointToLook - transform.position;
+                direction.y = 0;
+
+                if (direction.sqrMagnitude > 0.001f)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(direction);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                }
             }
+        }
+    }
+
+    // Actualiza la línea de puntería y maneja las colisiones
+    void UpdateAimLine()
+    {
+        if (aimLine == null)
+            return;
+
+        Vector3 start = bulletSpawnPoint.position;
+        Vector3 direction = transform.forward;
+
+        RaycastHit hit;
+        if (Physics.Raycast(start, direction, out hit, aimLineLength))
+        {
+            // Si la línea toca algo, ajusta la posición final de la línea en el punto de colisión
+            aimLine.positionCount = 2;
+            aimLine.SetPosition(0, start);
+            aimLine.SetPosition(1, hit.point);
+        }
+        else
+        {
+            // Si no toca nada, dibuja la línea normalmente
+            aimLine.positionCount = 2;
+            aimLine.SetPosition(0, start);
+            aimLine.SetPosition(1, start + direction * aimLineLength);
         }
     }
 
     void Shoot()
     {
-        // Obtener una bala del pool
         GameObject bullet = GetPooledBullet();
         if (bullet != null)
         {
@@ -149,7 +189,6 @@ public class PlayerController : MonoBehaviour
         return null;
     }
 
-    // Método para recibir daño
     public void TakeDamage(int damage)
     {
         if (isDead || isInvincible)
@@ -157,35 +196,30 @@ public class PlayerController : MonoBehaviour
 
         currentHP -= damage;
         Debug.Log("Daño recibido.");
-        // Iniciar la invulnerabilidad
+
         isInvincible = true;
         invincibilityTimer = invincibilityDuration;
 
-        // Iniciar el efecto de parpadeo
         StartCoroutine(Blink());
 
-        // Verificar si la vida llegó a 0 o menos
         if (currentHP <= 0)
         {
             Die();
         }
     }
 
-    // Método que se llama cuando el jugador muere
     void Die()
     {
         isDead = true;
 
         Debug.Log("El jugador ha muerto.");
-        gameObject.SetActive(false); // Desactivar el jugador como ejemplo
+        gameObject.SetActive(false);
     }
 
-    // Corrutina para el efecto de parpadeo
     IEnumerator Blink()
     {
         while (isInvincible)
         {
-            // Alternar la visibilidad del jugador
             SetPlayerVisibility(false);
             yield return new WaitForSeconds(blinkInterval);
             SetPlayerVisibility(true);
@@ -193,7 +227,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Método para establecer la visibilidad del jugador
     void SetPlayerVisibility(bool isVisible)
     {
         if (playerRenderer != null)
