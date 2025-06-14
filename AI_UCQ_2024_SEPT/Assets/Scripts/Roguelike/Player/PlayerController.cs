@@ -20,6 +20,9 @@ public class PlayerController : MonoBehaviour
     // Variables para la línea de puntería
     public LineRenderer aimLine;  // Asignar en inspector el LineRenderer
     public float aimLineLength = 10f; // Longitud de la línea guía
+    public Color defaultLineColor = Color.white; // Color por defecto de la línea
+    public Color enemyLineColor = Color.red; // Color cuando detecta un enemigo
+    public Color destructibleLineColor = Color.green; // Color cuando detecta un objeto destructible
 
     // Variables de vida
     public int maxHP = 100; // Vida máxima del jugador
@@ -114,17 +117,22 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // Rota el jugador hacia la posición del mouse
     void RotateTowardsMouse()
     {
         // Comprobar si el cursor está dentro de la pantalla antes de usar ScreenPointToRay
         if (Input.mousePosition.x >= 0 && Input.mousePosition.x <= Screen.width &&
             Input.mousePosition.y >= 0 && Input.mousePosition.y <= Screen.height)
         {
+            // Crear un rayo desde la cámara hacia el punto del mouse
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            // Crear un plano horizontal para detectar el suelo
             Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
 
+            // Comprobar si el rayo intersecta con el plano del suelo
             float rayDistance;
 
+            // Si el rayo intersecta con el plano del suelo, calcular la dirección de rotación
             if (groundPlane.Raycast(ray, out rayDistance))
             {
                 Vector3 pointToLook = ray.GetPoint(rayDistance);
@@ -152,17 +160,32 @@ public class PlayerController : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(start, direction, out hit, aimLineLength))
         {
-            // Si la línea toca algo, ajusta la posición final de la línea en el punto de colisión
+            // Si la línea toca algo, cambiar el color dependiendo del tipo de objeto
             aimLine.positionCount = 2;
             aimLine.SetPosition(0, start);
             aimLine.SetPosition(1, hit.point);
+
+            // Verificar si es un enemigo o un objeto destructible
+            if (hit.collider.GetComponent<DestructibleObstacle>() != null)
+            {
+                aimLine.material.color = destructibleLineColor; // Color para objetos destructibles
+            }
+            else if (hit.collider.CompareTag("Enemy")) // Asume que los enemigos tienen la etiqueta "Enemy"
+            {
+                aimLine.material.color = enemyLineColor; // Color para enemigos
+            }
+            else
+            {
+                aimLine.material.color = defaultLineColor; // Color por defecto
+            }
         }
         else
         {
-            // Si no toca nada, dibuja la línea normalmente
+            // Si no toca nada, dibujar la línea normalmente
             aimLine.positionCount = 2;
             aimLine.SetPosition(0, start);
             aimLine.SetPosition(1, start + direction * aimLineLength);
+            aimLine.material.color = defaultLineColor; // Color por defecto
         }
     }
 
